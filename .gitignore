@@ -1,0 +1,46 @@
+# Node.js dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage reports
+coverage/
+
+# Editor directories and OS cruft
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local config
+*.local
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/
+# Husky generated helper scripts
+.husky/_/

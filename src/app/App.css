@@ -1,0 +1,11 @@
+@import url("../styles/globals.css");
+
+.app-board {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  background: #f9fafb;
+  color: #111827;
+}

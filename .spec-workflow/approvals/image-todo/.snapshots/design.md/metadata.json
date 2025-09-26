@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/image-todo/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-25T03:52:32.445Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758772352425_powlw64xf",
+      "approvalTitle": "ImageTodo 技术设计文档"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+:root {
+  /* Typography */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Spacing (8px grid) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* Radius */
+  --radius-window: 12px;
+  --radius-card: 8px;
+  --radius-control: 6px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-window: 0 18px 36px rgba(15, 23, 42, 0.18);
+  --shadow-window-dark: 0 18px 36px rgba(2, 6, 23, 0.6);
+
+  /* Transition */
+  --transition-standard: 200ms ease-in-out;
+
+  /* Layout */
+  --app-padding: var(--space-4);
+  --header-gap: var(--space-3);
+  --window-gap: var(--space-2);
+  --content-padding: var(--space-4);
+}
+
+:root {
+  color-scheme: light dark;
+}

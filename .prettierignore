@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+src-tauri/target/
+src-tauri/gen/
+*.lock
+.augment/
+.spec-workflow/
+pnpm-lock.yaml

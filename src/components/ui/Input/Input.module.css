@@ -1,0 +1,47 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  transition: border-color var(--transition-standard);
+}
+
+.field:focus {
+  outline: none;
+  border-color: #1f2933;
+}
+
+.errorState {
+  border-color: #ef4444;
+}
+
+.successState {
+  border-color: #22c55e;
+}
+
+.helperText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.errorMessage {
+  color: #ef4444;
+}
+
+.successMessage {
+  color: #16a34a;
+}
