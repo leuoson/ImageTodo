@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/custom-title-bar/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T07:46:53.766Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759304813755_k0ayxgopx",
+      "approvalTitle": "任务分解文档 - 自定义标题栏"
+    }
+  ]
+}

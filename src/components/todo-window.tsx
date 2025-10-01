@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { type Locale, useTranslation } from "@/lib/i18n"
 import type { Todo } from "@/lib/types"
 import { load } from '@tauri-apps/plugin-store'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 interface TodoWindowProps {
   locale: Locale
@@ -24,7 +25,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   useEffect(() => {
     const loadTodos = async () => {
       try {
-        const store = await load('todos.json', { autoSave: true })
+        const store = await load('todos.json', { autoSave: true, defaults: {} })
         const savedTodos = await store.get<Todo[]>('todos')
         if (savedTodos) {
           setTodos(savedTodos)
@@ -40,7 +41,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   useEffect(() => {
     const saveTodos = async () => {
       try {
-        const store = await load('todos.json', { autoSave: true })
+        const store = await load('todos.json', { autoSave: true, defaults: {} })
         await store.set('todos', todos)
         await store.save()
       } catch (error) {
@@ -69,10 +70,6 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)))
   }
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter((todo) => todo.id !== id))
-  }
-
   const deleteCompleted = () => {
     setTodos(todos.filter((todo) => !todo.completed))
   }
@@ -87,15 +84,24 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     setSidebarVisible(!sidebarVisible)
   }
 
+  const handleClose = async () => {
+    try {
+      await getCurrentWindow().close()
+    } catch (error) {
+      console.error('Failed to close window:', error)
+    }
+  }
+
   return (
-    <div className="h-screen w-screen bg-card flex overflow-hidden">
+    <div className="h-screen w-screen bg-card flex overflow-hidden rounded-xl">
       {/* Main Window */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden rounded-xl">
         {/* Window Controls */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0 rounded-t-xl bg-card" data-tauri-drag-region>
           <div className="flex items-center gap-2">
             <button
-              className="w-3 h-3 rounded-full bg-destructive hover:bg-destructive/80 transition-colors"
+              className="w-3 h-3 rounded-full bg-destructive hover:bg-destructive/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
+              onClick={handleClose}
               aria-label="Close"
             />
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={addTodo}>
@@ -140,7 +146,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
               <Input
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder={t.addTodo}
                 className="flex-1 border-0 bg-transparent px-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/50"
               />
