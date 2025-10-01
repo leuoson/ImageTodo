@@ -1,11 +1,15 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Plus, Grid3x3, Settings, ChevronLeft, ChevronRight, Minimize2, Trash2, MoreVertical, Pin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { SettingsPopup } from "@/components/settings-popup"
 import { type Locale, useTranslation } from "@/lib/i18n"
+import { loadSettings, saveSettings } from "@/lib/settings"
+import { updateScreenshotShortcut, initializeShortcuts, isShortcutSystemAvailable } from "@/lib/shortcuts"
 import type { Todo } from "@/lib/types"
 import { load } from '@tauri-apps/plugin-store'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -20,6 +24,8 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodoText, setNewTodoText] = useState("")
   const [sidebarVisible, setSidebarVisible] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [screenshotShortcut, setScreenshotShortcut] = useState("")
 
   // Load todos from Tauri store on mount
   useEffect(() => {
@@ -35,6 +41,30 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       }
     }
     loadTodos()
+  }, [])
+
+  // Load settings and initialize shortcuts on mount
+  useEffect(() => {
+    const loadAppSettings = async () => {
+      try {
+        // Test shortcut system first
+        const systemAvailable = await isShortcutSystemAvailable()
+        console.log('Shortcut system available:', systemAvailable)
+
+        const settings = await loadSettings()
+        setScreenshotShortcut(settings.screenshotShortcut)
+
+        // Initialize shortcuts
+        if (systemAvailable) {
+          await initializeShortcuts(settings.screenshotShortcut)
+        } else {
+          console.warn('Global shortcut system not available')
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error)
+      }
+    }
+    loadAppSettings()
   }, [])
 
   // Save todos to Tauri store whenever they change
@@ -84,6 +114,52 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     setSidebarVisible(!sidebarVisible)
   }
 
+  const handleOpenSettings = () => {
+    setIsSettingsOpen(true)
+  }
+
+  const handleShortcutChange = async (newShortcut: string) => {
+    try {
+      setScreenshotShortcut(newShortcut)
+      await updateScreenshotShortcut(newShortcut)
+
+      // Save to settings
+      const currentSettings = await loadSettings()
+      await saveSettings({
+        ...currentSettings,
+        screenshotShortcut: newShortcut
+      })
+
+      // Show success message for shortcut registration
+      if (newShortcut && newShortcut.trim() !== '') {
+        toast.success(t.shortcutRegistered)
+      } else if (newShortcut === '') {
+        toast.success(t.shortcutCleared)
+      }
+    } catch (error) {
+      console.error('Failed to update shortcut:', error)
+
+      // Show error message
+      const errorMessage = error instanceof Error ? error.message : t.shortcutRegisterError
+      if (errorMessage.includes('conflict') || errorMessage.includes('already in use')) {
+        toast.error(t.shortcutConflict)
+      } else if (errorMessage.includes('invalid')) {
+        toast.error(t.shortcutInvalidError)
+      } else {
+        toast.error(t.shortcutRegisterError)
+      }
+
+      // Revert local state on error
+      try {
+        const settings = await loadSettings()
+        setScreenshotShortcut(settings.screenshotShortcut)
+      } catch (loadError) {
+        console.error('Failed to revert shortcut:', loadError)
+        toast.error(t.settingsLoadError)
+      }
+    }
+  }
+
   const handleClose = async () => {
     try {
       await getCurrentWindow().close()
@@ -114,7 +190,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={() => onLocaleChange(locale === "en" ? "zh-CN" : "en")}
+              onClick={handleOpenSettings}
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -168,7 +244,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => onLocaleChange(locale === "en" ? "zh-CN" : "en")}
+            onClick={handleOpenSettings}
           >
             <Settings className="h-4 w-4" />
           </Button>
@@ -184,6 +260,16 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
           </Button>
         </div>
       )}
+
+      {/* Settings Popup */}
+      <SettingsPopup
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        locale={locale}
+        onLocaleChange={onLocaleChange}
+        screenshotShortcut={screenshotShortcut}
+        onShortcutChange={handleShortcutChange}
+      />
     </div>
   )
 }

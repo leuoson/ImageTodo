@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/settings-popup/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T09:03:26.122Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759309406105_e9pw2lcqk",
+      "approvalTitle": "设置弹窗功能设计规格文档"
+    }
+  ]
+}

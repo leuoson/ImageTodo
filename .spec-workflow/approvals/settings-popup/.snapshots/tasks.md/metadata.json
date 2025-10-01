@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/settings-popup/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T09:10:15.617Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759309815597_zdd4433nk",
+      "approvalTitle": "设置弹窗功能任务分解文档"
+    }
+  ]
+}
