@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    image_todo_desktop_lib::run()
+    tauri_todo_app_lib::run()
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "image-todo-desktop",
+  "productName": "tauri-todo-app",
   "version": "0.1.0",
   "identifier": "com.imagetodo.app",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "Image Todo",
-        "width": 700,
+        "width": 900,
         "height": 700,
         "resizable": true,
         "fullscreen": false,

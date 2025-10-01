@@ -4,15 +4,16 @@ import path from "path";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
+const resolvedHost = host || "127.0.0.1"; // IPv4 loopback plays nicer with macOS sandboxing
+const useCustomHost = Boolean(host);
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
 
-  // Path aliases to match reference implementation
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "."),
     },
   },
 
@@ -24,8 +25,8 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
-    hmr: host
+    host: resolvedHost,
+    hmr: useCustomHost
       ? {
           protocol: "ws",
           host,

@@ -18,4 +18,3 @@ export const translations = {
 export function useTranslation(locale: Locale) {
   return translations[locale]
 }
-
