@@ -17,6 +17,7 @@ export function SelectionOverlay() {
   const [isSelecting, setIsSelecting] = useState(false)
   const [selection, setSelection] = useState<SelectionRect | null>(null)
   const [locale, setLocale] = useState<Locale>('zh-CN')
+  const [scaleFactor, setScaleFactor] = useState<number>(1.0)
   const overlayRef = useRef<HTMLDivElement>(null)
   const t = useTranslation(locale)
 
@@ -27,6 +28,20 @@ export function SelectionOverlay() {
     }).catch(error => {
       console.error('Failed to load locale:', error)
     })
+  }, [])
+
+  // Get window scale factor on mount
+  useEffect(() => {
+    getCurrentWindow()
+      .scaleFactor()
+      .then(factor => {
+        setScaleFactor(factor)
+        console.log('Window scale factor:', factor)
+      })
+      .catch(err => {
+        console.error('Failed to get scale factor:', err)
+        // Keep default value 1.0
+      })
   }, [])
 
   // Handle mouse down
@@ -56,15 +71,15 @@ export function SelectionOverlay() {
   // Handle mouse up
   const handleMouseUp = async () => {
     if (!isSelecting || !selection) return
-    
+
     setIsSelecting(false)
-    
-    // Calculate selection region
+
+    // Calculate selection region (CSS pixels)
     const x = Math.min(selection.startX, selection.endX)
     const y = Math.min(selection.startY, selection.endY)
     const width = Math.abs(selection.endX - selection.startX)
     const height = Math.abs(selection.endY - selection.startY)
-    
+
     // Check minimum size
     if (width < 50 || height < 50) {
       toast.error(t.regionTooSmall)
@@ -72,15 +87,35 @@ export function SelectionOverlay() {
       return
     }
 
+    // Convert CSS pixels to physical pixels
+    const physicalX = Math.round(x * scaleFactor)
+    const physicalY = Math.round(y * scaleFactor)
+    const physicalWidth = Math.round(width * scaleFactor)
+    const physicalHeight = Math.round(height * scaleFactor)
+
+    console.log('CSS coordinates:', { x, y, width, height })
+    console.log('Physical coordinates:', {
+      x: physicalX,
+      y: physicalY,
+      width: physicalWidth,
+      height: physicalHeight
+    })
+
     try {
-      // Call Rust command to capture screenshot
-      const result = await invoke<{success: boolean, path?: string, error?: string}>(
+      // Call Rust command to capture screenshot with physical pixels
+      const result = await invoke<{success: boolean, path?: string, message?: string, error?: string}>(
         'capture_screen_region',
-        { x, y, width, height }
+        {
+          x: physicalX,
+          y: physicalY,
+          width: physicalWidth,
+          height: physicalHeight
+        }
       )
 
       if (result.success) {
-        toast.success(t.screenshotSaved)
+        // Display message from Rust (includes clipboard status)
+        toast.success(result.message || t.screenshotSaved)
         // Window will be closed by Rust side
       } else {
         toast.error(result.error || t.screenshotFailed)

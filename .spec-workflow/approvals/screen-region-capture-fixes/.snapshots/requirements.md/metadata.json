@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/screen-region-capture-fixes/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T08:42:03.346Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759480923330_147xfqqpw",
+      "approvalTitle": "屏幕区域截图功能修复 - 需求规范"
+    }
+  ]
+}

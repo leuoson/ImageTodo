@@ -1,8 +1,12 @@
 use xcap::Monitor;
 use chrono::Local;
 use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
 use serde::{Serialize, Deserialize};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use arboard::{Clipboard, ImageData};
+use std::borrow::Cow;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -15,6 +19,7 @@ fn greet(name: &str) -> String {
 struct ScreenshotResult {
     success: bool,
     path: Option<String>,
+    message: Option<String>,
     error: Option<String>,
 }
 
@@ -178,10 +183,25 @@ fn capture_screen_region(
         return Ok(ScreenshotResult {
             success: false,
             path: None,
+            message: None,
             error: Some("选择区域过小,最小尺寸为50x50像素".to_string()),
         });
     }
 
+    // 1. Get window reference first
+    let window = app
+        .get_webview_window("region-selector")
+        .ok_or("Failed to get selector window")?;
+
+    // 2. Hide window before capturing
+    window
+        .hide()
+        .map_err(|e| format!("Failed to hide window: {}", e))?;
+
+    // 3. Wait for window to be fully hidden
+    thread::sleep(Duration::from_millis(100));
+
+    // 4. Now capture the screen (overlay is no longer visible)
     // Get primary monitor
     let monitors = Monitor::all()
         .map_err(|e| format!("Failed to get monitors: {}", e))?;
@@ -212,7 +232,7 @@ fn capture_screen_region(
         .capture_region(x_u32, y_u32, width, height)
         .map_err(|e| format!("Failed to capture region: {}", e))?;
 
-    // Generate filename with timestamp
+    // 5. Generate filename with timestamp
     let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
     let filename = format!("screenshot_region_{}.png", timestamp);
 
@@ -226,14 +246,46 @@ fn capture_screen_region(
     image.save(&file_path)
         .map_err(|e| format!("Failed to save screenshot: {}", e))?;
 
-    // Close selector window
-    if let Some(window) = app.get_webview_window("region-selector") {
-        window.close().ok();
-    }
+    // 6. Copy to clipboard
+    let clipboard_result = (|| -> Result<(), String> {
+        // Create clipboard instance
+        let mut clipboard = Clipboard::new()
+            .map_err(|e| format!("Failed to access clipboard: {}", e))?;
+
+        // Convert xcap's RgbaImage to arboard's ImageData
+        let (width, height) = image.dimensions();
+        let rgba_data = image.to_vec();
+
+        let img_data = ImageData {
+            width: width as usize,
+            height: height as usize,
+            bytes: Cow::from(rgba_data),
+        };
+
+        // Set clipboard content
+        clipboard
+            .set_image(img_data)
+            .map_err(|e| format!("Failed to set clipboard: {}", e))?;
+
+        Ok(())
+    })();
+
+    // Generate message based on clipboard operation result
+    let message = match clipboard_result {
+        Ok(_) => format!("截图已保存并复制到剪贴板: {}", filename),
+        Err(e) => {
+            eprintln!("Clipboard error: {}", e);
+            format!("截图已保存,但复制到剪贴板失败: {}", filename)
+        }
+    };
+
+    // 7. Close window at the end
+    window.close().ok();
 
     Ok(ScreenshotResult {
         success: true,
         path: Some(file_path.to_string_lossy().to_string()),
+        message: Some(message),
         error: None,
     })
 }
