@@ -4,13 +4,13 @@ import { type Locale } from '@/lib/i18n'
 // Settings data structure
 export interface AppSettings {
   locale: Locale
-  screenshotShortcut: string
+  regionCaptureShortcut: string
 }
 
 // Default settings
 export const defaultSettings: AppSettings = {
   locale: 'zh-CN',
-  screenshotShortcut: 'Alt+P'
+  regionCaptureShortcut: 'Alt+Shift+P'
 }
 
 // Store file name
@@ -113,8 +113,8 @@ export function validateSettings(settings: any): settings is AppSettings {
     return false
   }
 
-  // Check screenshotShortcut (can be empty string)
-  if (typeof settings.screenshotShortcut !== 'string') {
+  // Check regionCaptureShortcut (can be empty string)
+  if (typeof settings.regionCaptureShortcut !== 'string') {
     return false
   }
 

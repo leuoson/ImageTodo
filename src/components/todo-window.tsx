@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { SettingsPopup } from "@/components/settings-popup"
 import { type Locale, useTranslation } from "@/lib/i18n"
 import { loadSettings, saveSettings } from "@/lib/settings"
-import { updateScreenshotShortcut, initializeShortcuts, isShortcutSystemAvailable } from "@/lib/shortcuts"
 import type { Todo } from "@/lib/types"
 import { load } from '@tauri-apps/plugin-store'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -25,7 +24,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   const [newTodoText, setNewTodoText] = useState("")
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [screenshotShortcut, setScreenshotShortcut] = useState("")
+  const [regionCaptureShortcut, setRegionCaptureShortcut] = useState("Alt+Shift+P")
 
   // Load todos from Tauri store on mount
   useEffect(() => {
@@ -47,19 +46,9 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   useEffect(() => {
     const loadAppSettings = async () => {
       try {
-        // Test shortcut system first
-        const systemAvailable = await isShortcutSystemAvailable()
-        console.log('Shortcut system available:', systemAvailable)
-
         const settings = await loadSettings()
-        setScreenshotShortcut(settings.screenshotShortcut)
-
-        // Initialize shortcuts
-        if (systemAvailable) {
-          await initializeShortcuts(settings.screenshotShortcut)
-        } else {
-          console.warn('Global shortcut system not available')
-        }
+        setRegionCaptureShortcut(settings.regionCaptureShortcut)
+        console.log('Settings loaded:', settings)
       } catch (error) {
         console.error('Failed to load settings:', error)
       }
@@ -118,44 +107,29 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     setIsSettingsOpen(true)
   }
 
-  const handleShortcutChange = async (newShortcut: string) => {
+  const handleRegionShortcutChange = async (newShortcut: string) => {
     try {
-      setScreenshotShortcut(newShortcut)
-      await updateScreenshotShortcut(newShortcut)
+      setRegionCaptureShortcut(newShortcut)
 
       // Save to settings
       const currentSettings = await loadSettings()
       await saveSettings({
         ...currentSettings,
-        screenshotShortcut: newShortcut
+        regionCaptureShortcut: newShortcut
       })
 
-      // Show success message for shortcut registration
-      if (newShortcut && newShortcut.trim() !== '') {
-        toast.success(t.shortcutRegistered)
-      } else if (newShortcut === '') {
-        toast.success(t.shortcutCleared)
-      }
+      // Show success message
+      toast.success('快捷键已保存,重启应用后生效')
     } catch (error) {
-      console.error('Failed to update shortcut:', error)
-
-      // Show error message
-      const errorMessage = error instanceof Error ? error.message : t.shortcutRegisterError
-      if (errorMessage.includes('conflict') || errorMessage.includes('already in use')) {
-        toast.error(t.shortcutConflict)
-      } else if (errorMessage.includes('invalid')) {
-        toast.error(t.shortcutInvalidError)
-      } else {
-        toast.error(t.shortcutRegisterError)
-      }
+      console.error('Failed to update region capture shortcut:', error)
+      toast.error('保存快捷键失败')
 
       // Revert local state on error
       try {
         const settings = await loadSettings()
-        setScreenshotShortcut(settings.screenshotShortcut)
+        setRegionCaptureShortcut(settings.regionCaptureShortcut)
       } catch (loadError) {
-        console.error('Failed to revert shortcut:', loadError)
-        toast.error(t.settingsLoadError)
+        console.error('Failed to revert region shortcut:', loadError)
       }
     }
   }
@@ -267,8 +241,8 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
         onOpenChange={setIsSettingsOpen}
         locale={locale}
         onLocaleChange={onLocaleChange}
-        screenshotShortcut={screenshotShortcut}
-        onShortcutChange={handleShortcutChange}
+        regionCaptureShortcut={regionCaptureShortcut}
+        onRegionShortcutChange={handleRegionShortcutChange}
       />
     </div>
   )

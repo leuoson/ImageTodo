@@ -18,42 +18,96 @@ struct ScreenshotResult {
     error: Option<String>,
 }
 
-/// Capture screenshot of the primary monitor
-#[tauri::command]
-fn capture_screenshot() -> Result<ScreenshotResult, String> {
-    // Get all monitors
-    let monitors = Monitor::all()
-        .map_err(|e| format!("Failed to get monitors: {}", e))?;
+/// App settings structure (matching frontend)
+#[derive(Debug, Serialize, Deserialize)]
+struct AppSettings {
+    locale: String,
+    #[serde(rename = "regionCaptureShortcut")]
+    region_capture_shortcut: String,
+}
 
-    // Find primary monitor
-    let primary_monitor = monitors
-        .into_iter()
-        .find(|m| m.is_primary().unwrap_or(false))
-        .ok_or_else(|| "No primary monitor found".to_string())?;
+/// Parse shortcut string and convert to Tauri Shortcut
+/// Format: "Alt+Shift+P" -> Shortcut with modifiers and key
+fn parse_shortcut(shortcut_str: &str) -> Option<tauri_plugin_global_shortcut::Shortcut> {
+    use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 
-    // Capture screen
-    let image = primary_monitor
-        .capture_image()
-        .map_err(|e| format!("Failed to capture screen: {}", e))?;
+    let parts: Vec<&str> = shortcut_str.split('+').map(|s| s.trim()).collect();
+    if parts.is_empty() {
+        return None;
+    }
 
-    // Generate filename with timestamp
-    let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
-    let filename = format!("screenshot_{}.png", timestamp);
+    let mut modifiers = Modifiers::empty();
+    let mut key_code: Option<Code> = None;
 
-    // Get download directory
-    let download_dir = get_download_dir()
-        .ok_or_else(|| "Failed to get download directory".to_string())?;
+    for part in parts {
+        match part.to_lowercase().as_str() {
+            "alt" => modifiers |= Modifiers::ALT,
+            "shift" => modifiers |= Modifiers::SHIFT,
+            "ctrl" | "control" => modifiers |= Modifiers::CONTROL,
+            "cmd" | "meta" | "super" => modifiers |= Modifiers::META,
+            // Parse key code
+            key => {
+                key_code = match key.to_uppercase().as_str() {
+                    "A" => Some(Code::KeyA),
+                    "B" => Some(Code::KeyB),
+                    "C" => Some(Code::KeyC),
+                    "D" => Some(Code::KeyD),
+                    "E" => Some(Code::KeyE),
+                    "F" => Some(Code::KeyF),
+                    "G" => Some(Code::KeyG),
+                    "H" => Some(Code::KeyH),
+                    "I" => Some(Code::KeyI),
+                    "J" => Some(Code::KeyJ),
+                    "K" => Some(Code::KeyK),
+                    "L" => Some(Code::KeyL),
+                    "M" => Some(Code::KeyM),
+                    "N" => Some(Code::KeyN),
+                    "O" => Some(Code::KeyO),
+                    "P" => Some(Code::KeyP),
+                    "Q" => Some(Code::KeyQ),
+                    "R" => Some(Code::KeyR),
+                    "S" => Some(Code::KeyS),
+                    "T" => Some(Code::KeyT),
+                    "U" => Some(Code::KeyU),
+                    "V" => Some(Code::KeyV),
+                    "W" => Some(Code::KeyW),
+                    "X" => Some(Code::KeyX),
+                    "Y" => Some(Code::KeyY),
+                    "Z" => Some(Code::KeyZ),
+                    "0" => Some(Code::Digit0),
+                    "1" => Some(Code::Digit1),
+                    "2" => Some(Code::Digit2),
+                    "3" => Some(Code::Digit3),
+                    "4" => Some(Code::Digit4),
+                    "5" => Some(Code::Digit5),
+                    "6" => Some(Code::Digit6),
+                    "7" => Some(Code::Digit7),
+                    "8" => Some(Code::Digit8),
+                    "9" => Some(Code::Digit9),
+                    "F1" => Some(Code::F1),
+                    "F2" => Some(Code::F2),
+                    "F3" => Some(Code::F3),
+                    "F4" => Some(Code::F4),
+                    "F5" => Some(Code::F5),
+                    "F6" => Some(Code::F6),
+                    "F7" => Some(Code::F7),
+                    "F8" => Some(Code::F8),
+                    "F9" => Some(Code::F9),
+                    "F10" => Some(Code::F10),
+                    "F11" => Some(Code::F11),
+                    "F12" => Some(Code::F12),
+                    _ => None,
+                };
+            }
+        }
+    }
 
-    let file_path = download_dir.join(&filename);
-
-    // Save image
-    image.save(&file_path)
-        .map_err(|e| format!("Failed to save screenshot: {}", e))?;
-
-    Ok(ScreenshotResult {
-        success: true,
-        path: Some(file_path.to_string_lossy().to_string()),
-        error: None,
+    key_code.map(|code| {
+        if modifiers.is_empty() {
+            Shortcut::new(None, code)
+        } else {
+            Shortcut::new(Some(modifiers), code)
+        }
     })
 }
 
@@ -190,17 +244,46 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // Register global shortcut plugin with handler
-            use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+            use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+            use tauri_plugin_store::StoreExt;
 
             let app_handle = app.handle().clone();
-            let alt_shift_p = Shortcut::new(Some(Modifiers::ALT | Modifiers::SHIFT), Code::KeyP);
 
+            // Read shortcut from settings store
+            let store = app.store("settings.json")?;
+            let shortcut_str = if let Some(settings) = store.get("settings") {
+                if let Some(shortcut) = settings.get("regionCaptureShortcut") {
+                    if let Some(s) = shortcut.as_str() {
+                        s.to_string()
+                    } else {
+                        "Alt+Shift+P".to_string()
+                    }
+                } else {
+                    "Alt+Shift+P".to_string()
+                }
+            } else {
+                "Alt+Shift+P".to_string()
+            };
+
+            println!("Loading region capture shortcut from settings: {}", shortcut_str);
+
+            // Parse shortcut string
+            let shortcut = match parse_shortcut(&shortcut_str) {
+                Some(s) => s,
+                None => {
+                    eprintln!("Failed to parse shortcut '{}', using default Alt+Shift+P", shortcut_str);
+                    parse_shortcut("Alt+Shift+P").unwrap()
+                }
+            };
+
+            println!("Registering shortcut: {:?}", shortcut);
+
+            // Register global shortcut plugin with handler
             app.handle().plugin(
                 tauri_plugin_global_shortcut::Builder::new()
-                    .with_handler(move |_app, shortcut, event| {
-                        if shortcut == &alt_shift_p && event.state() == ShortcutState::Pressed {
-                            // Create selector window when Alt+Shift+P is pressed
+                    .with_handler(move |_app, triggered_shortcut, event| {
+                        if triggered_shortcut == &shortcut && event.state() == ShortcutState::Pressed {
+                            // Create selector window when shortcut is pressed
                             if let Err(e) = create_selector_window(&app_handle) {
                                 eprintln!("Failed to create selector window: {}", e);
                             }
@@ -210,13 +293,15 @@ pub fn run() {
             )?;
 
             // Register the shortcut
-            app.global_shortcut().register(alt_shift_p)?;
+            match app.global_shortcut().register(shortcut.clone()) {
+                Ok(_) => println!("Successfully registered shortcut: {:?}", shortcut),
+                Err(e) => eprintln!("Failed to register shortcut: {}", e),
+            }
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             greet,
-            capture_screenshot,
             capture_screen_region
         ])
         .run(tauri::generate_context!())

@@ -19,67 +19,75 @@ export function ShortcutSection({
 }: ShortcutSectionProps) {
   const t = useTranslation(locale)
   const [isCapturing, setIsCapturing] = useState(false)
-  const handleKeyDown = (e: KeyboardEvent) => {
+
+  useEffect(() => {
     if (!isCapturing) return
 
-    e.preventDefault()
-    e.stopPropagation()
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
 
-    // Don't process modifier-only keys or escape key
-    const isModifierOnly = ['Control', 'Meta', 'Shift', 'Alt', 'AltGraph'].includes(e.key)
-    if (isModifierOnly) {
-      return // Wait for the actual key combination
+      // Don't process modifier-only keys or escape key
+      const isModifierOnly = ['Control', 'Meta', 'Shift', 'Alt', 'AltGraph'].includes(e.key)
+      if (isModifierOnly) {
+        return // Wait for the actual key combination
+      }
+
+      // Handle escape key to cancel capture
+      if (e.key === 'Escape') {
+        setIsCapturing(false)
+        return
+      }
+
+      const keys: string[] = []
+
+      // Add modifier keys in consistent order
+      if (e.ctrlKey || e.metaKey) {
+        keys.push(e.ctrlKey ? 'Ctrl' : 'Cmd')
+      }
+      if (e.altKey) {
+        keys.push('Alt')
+      }
+      if (e.shiftKey) {
+        keys.push('Shift')
+      }
+
+      // Add main key (only letters, numbers, and function keys)
+      let mainKey = ''
+      if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+        mainKey = e.key.toUpperCase()
+      } else if (/^F\d+$/.test(e.key)) {
+        mainKey = e.key
+      } else if (['Space', 'Enter', 'Tab', 'Backspace', 'Delete'].includes(e.key)) {
+        mainKey = e.key
+      }
+
+      if (mainKey) {
+        keys.push(mainKey)
+      }
+
+      // Only accept combinations with at least one modifier + main key
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
+      if (hasModifier && mainKey && keys.length >= 2) {
+        const shortcutString = keys.join('+')
+        onShortcutChange(shortcutString)
+        setIsCapturing(false)
+
+        // Don't show success toast here, let parent handle it
+      } else if (mainKey) {
+        // Show error for invalid shortcut (no modifier)
+        toast.error(t.invalidShortcut)
+        onError?.(t.invalidShortcut)
+        setIsCapturing(false)
+      }
+      // If no main key, just ignore (user is still typing)
     }
 
-    // Handle escape key to cancel capture
-    if (e.key === 'Escape') {
-      setIsCapturing(false)
-      return
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
     }
-
-    const keys: string[] = []
-
-    // Add modifier keys in consistent order
-    if (e.ctrlKey || e.metaKey) {
-      keys.push(e.ctrlKey ? 'Ctrl' : 'Cmd')
-    }
-    if (e.altKey) {
-      keys.push('Alt')
-    }
-    if (e.shiftKey) {
-      keys.push('Shift')
-    }
-
-    // Add main key (only letters, numbers, and function keys)
-    let mainKey = ''
-    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
-      mainKey = e.key.toUpperCase()
-    } else if (/^F\d+$/.test(e.key)) {
-      mainKey = e.key
-    } else if (['Space', 'Enter', 'Tab', 'Backspace', 'Delete'].includes(e.key)) {
-      mainKey = e.key
-    }
-
-    if (mainKey) {
-      keys.push(mainKey)
-    }
-
-    // Only accept combinations with at least one modifier + main key
-    const hasModifier = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
-    if (hasModifier && mainKey && keys.length >= 2) {
-      const shortcutString = keys.join('+')
-      onShortcutChange(shortcutString)
-      setIsCapturing(false)
-
-      // Don't show success toast here, let parent handle it
-    } else if (mainKey) {
-      // Show error for invalid shortcut (no modifier)
-      toast.error(t.invalidShortcut)
-      onError?.(t.invalidShortcut)
-      setIsCapturing(false)
-    }
-    // If no main key, just ignore (user is still typing)
-  }
+  }, [isCapturing, onShortcutChange, onError, t])
 
   const handleInputClick = () => {
     setIsCapturing(true)
@@ -89,16 +97,6 @@ export function ShortcutSection({
     onShortcutChange('')
     toast.success(t.shortcutCleared)
   }
-
-  // Add/remove event listener for key capture
-  useEffect(() => {
-    if (isCapturing) {
-      document.addEventListener('keydown', handleKeyDown, true)
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown, true)
-      }
-    }
-  }, [isCapturing])
 
   // Auto-cancel capture after 5 seconds
   useEffect(() => {

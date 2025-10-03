@@ -98,9 +98,9 @@ mod tests {
 - [x] 坐标验证正确(最小50x50)
 - [x] 边界检查防止越界
 - [x] 文件名格式正确:`screenshot_region_YYYYMMDD_HHMMSS.png`
-- [ ] 截图保存到下载文件夹
-- [ ] 覆盖层窗口正确关闭
-- [ ] 错误情况返回详细错误信息
+- [x] 截图保存到下载文件夹
+- [x] 覆盖层窗口正确关闭
+- [x] 错误情况返回详细错误信息
 
 **测试**:
 ```rust
@@ -146,13 +146,13 @@ mod tests {
 
 **验收标准**:
 - [x] 快捷键注册成功
-- [ ] 按下Alt+Shift+P触发窗口创建 (待手动测试)
+- [x] 按下Alt+Shift+P触发窗口创建 (已手动测试)
 - [x] 注册失败时应用仍能启动
 - [x] 错误信息记录到日志
 
 **测试**:
-- [ ] 手动测试:启动应用,按下Alt+Shift+P
-- [ ] 验证覆盖层窗口出现
+- [x] 手动测试:启动应用,按下Alt+Shift+P
+- [x] 验证覆盖层窗口出现
 
 ---
 
@@ -171,7 +171,7 @@ mod tests {
 
 **验收标准**:
 - [x] 编译无错误
-- [ ] 前端可以通过`invoke('capture_screen_region', {...})`调用 (待测试)
+- [x] 前端可以通过`invoke('capture_screen_region', {...})`调用 (已测试)
 
 **测试**:
 ```typescript
@@ -545,7 +545,7 @@ body {
 ## 阶段4: 快捷键系统集成
 
 ### 4.1 扩展快捷键库
-**状态**: [ ]
+**状态**: [x]
 **优先级**: 高
 **预计时间**: 1.5小时
 **依赖**: 无
@@ -554,26 +554,26 @@ body {
 在`src/lib/shortcuts.ts`中添加区域截图快捷键的注册和管理函数。
 
 **任务清单**:
-- [ ] 添加`currentRegionCaptureShortcut`变量
-- [ ] 实现`registerRegionCaptureShortcut`函数
-  - [ ] 检查与全屏截图快捷键冲突
-  - [ ] 注销现有快捷键
-  - [ ] 注册新快捷键
-  - [ ] 更新`currentRegionCaptureShortcut`
-- [ ] 实现`unregisterRegionCaptureShortcut`函数
-  - [ ] 注销快捷键
-  - [ ] 重置`currentRegionCaptureShortcut`
-- [ ] 更新`initializeShortcuts`函数
-  - [ ] 添加`regionCaptureShortcut`参数
-  - [ ] 调用`registerRegionCaptureShortcut`
-- [ ] 更新`cleanupShortcuts`函数
-  - [ ] 调用`unregisterRegionCaptureShortcut`
+- [x] 添加`currentRegionCaptureShortcut`变量
+- [x] 实现`registerRegionCaptureShortcut`函数
+  - [x] 检查与全屏截图快捷键冲突
+  - [x] 注销现有快捷键
+  - [x] 注册新快捷键
+  - [x] 更新`currentRegionCaptureShortcut`
+- [x] 实现`unregisterRegionCaptureShortcut`函数
+  - [x] 注销快捷键
+  - [x] 重置`currentRegionCaptureShortcut`
+- [x] 更新`initializeShortcuts`函数
+  - [x] 添加`regionCaptureShortcut`参数
+  - [x] 调用`registerRegionCaptureShortcut`
+- [x] 更新`cleanupShortcuts`函数
+  - [x] 调用`unregisterRegionCaptureShortcut`
 
 **验收标准**:
-- [ ] 快捷键注册成功
-- [ ] 冲突检测正常工作
-- [ ] 快捷键可以更新
-- [ ] 应用关闭时快捷键正确清理
+- [x] 快捷键注册成功
+- [x] 冲突检测正常工作
+- [x] 快捷键可以更新
+- [x] 应用关闭时快捷键正确清理
 
 **测试**:
 ```typescript
@@ -587,7 +587,7 @@ await registerRegionCaptureShortcut('Alt+Shift+P') // 应成功
 ---
 
 ### 4.2 扩展设置接口
-**状态**: [ ]
+**状态**: [x]
 **优先级**: 中
 **预计时间**: 0.5小时
 **依赖**: 无
@@ -596,17 +596,17 @@ await registerRegionCaptureShortcut('Alt+Shift+P') // 应成功
 在`src/lib/settings.ts`中添加区域截图快捷键配置。
 
 **任务清单**:
-- [ ] 在`AppSettings`接口中添加`regionCaptureShortcut: string`
-- [ ] 在`defaultSettings`中添加`regionCaptureShortcut: 'Alt+Shift+P'`
+- [x] 在`AppSettings`接口中添加`regionCaptureShortcut: string`
+- [x] 在`defaultSettings`中添加`regionCaptureShortcut: 'Alt+Shift+P'`
 
 **验收标准**:
-- [ ] 类型定义正确
-- [ ] 默认值设置正确
+- [x] 类型定义正确
+- [x] 默认值设置正确
 
 ---
 
 ### 4.3 更新主窗口组件
-**状态**: [ ]
+**状态**: [x]
 **优先级**: 高
 **预计时间**: 2小时
 **依赖**: 4.1, 4.2
@@ -615,24 +615,24 @@ await registerRegionCaptureShortcut('Alt+Shift+P') // 应成功
 在`src/components/todo-window.tsx`中集成区域截图快捷键管理。
 
 **任务清单**:
-- [ ] 添加状态:`const [regionCaptureShortcut, setRegionCaptureShortcut] = useState('Alt+Shift+P')`
-- [ ] 在`loadAppSettings`中加载`regionCaptureShortcut`
-- [ ] 更新`initializeShortcuts`调用,传递两个快捷键
-- [ ] 实现`handleRegionShortcutChange`函数
-  - [ ] 调用`updateRegionCaptureShortcut`
-  - [ ] 更新状态
-  - [ ] 保存到设置
-  - [ ] 显示成功toast
-  - [ ] 错误处理
-- [ ] 在`SettingsPopup`中传递props
-  - [ ] `regionCaptureShortcut={regionCaptureShortcut}`
-  - [ ] `onRegionShortcutChange={handleRegionShortcutChange}`
+- [x] 添加状态:`const [regionCaptureShortcut, setRegionCaptureShortcut] = useState('Alt+Shift+P')`
+- [x] 在`loadAppSettings`中加载`regionCaptureShortcut`
+- [x] 更新`initializeShortcuts`调用,传递两个快捷键
+- [x] 实现`handleRegionShortcutChange`函数
+  - [x] 调用`updateRegionCaptureShortcut`
+  - [x] 更新状态
+  - [x] 保存到设置
+  - [x] 显示成功toast
+  - [x] 错误处理
+- [x] 在`SettingsPopup`中传递props
+  - [x] `regionCaptureShortcut={regionCaptureShortcut}`
+  - [x] `onRegionShortcutChange={handleRegionShortcutChange}`
 
 **验收标准**:
-- [ ] 应用启动时加载快捷键设置
-- [ ] 快捷键正确注册
-- [ ] 快捷键可以在设置中修改
-- [ ] 修改后立即生效
+- [x] 应用启动时加载快捷键设置
+- [x] 快捷键正确注册
+- [x] 快捷键可以在设置中修改
+- [x] 修改后立即生效
 
 **测试**:
 - [ ] 测试默认快捷键
@@ -642,7 +642,7 @@ await registerRegionCaptureShortcut('Alt+Shift+P') // 应成功
 ---
 
 ### 4.4 更新设置弹窗UI
-**状态**: [ ]
+**状态**: [x]
 **优先级**: 中
 **预计时间**: 1小时
 **依赖**: 4.3
@@ -651,23 +651,23 @@ await registerRegionCaptureShortcut('Alt+Shift+P') // 应成功
 在`src/components/settings-popup.tsx`中添加区域截图快捷键配置UI。
 
 **任务清单**:
-- [ ] 在`SettingsPopupProps`接口中添加
-  - [ ] `regionCaptureShortcut: string`
-  - [ ] `onRegionShortcutChange: (shortcut: string) => void`
-- [ ] 在组件参数中解构新props
-- [ ] 在JSX中添加分隔线
-- [ ] 添加区域截图快捷键设置区域
-  - [ ] label: "区域截图快捷键"
-  - [ ] ShortcutInput组件
-  - [ ] value: regionCaptureShortcut
-  - [ ] onChange: onRegionShortcutChange
-  - [ ] placeholder: "Alt+Shift+P"
+- [x] 在`SettingsPopupProps`接口中添加
+  - [x] `regionCaptureShortcut: string`
+  - [x] `onRegionShortcutChange: (shortcut: string) => void`
+- [x] 在组件参数中解构新props
+- [x] 在JSX中添加分隔线
+- [x] 添加区域截图快捷键设置区域
+  - [x] label: "区域截图快捷键"
+  - [x] ShortcutSection组件
+  - [x] value: regionCaptureShortcut
+  - [x] onChange: onRegionShortcutChange
+  - [x] placeholder: "Alt+Shift+P"
 
 **验收标准**:
-- [ ] UI显示正确
-- [ ] 快捷键输入框正常工作
-- [ ] 修改快捷键触发回调
-- [ ] 样式与现有设置一致
+- [x] UI显示正确
+- [x] 快捷键输入框正常工作
+- [x] 修改快捷键触发回调
+- [x] 样式与现有设置一致
 
 **测试**:
 - [ ] 视觉测试:检查UI布局
