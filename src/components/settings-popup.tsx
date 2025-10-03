@@ -76,7 +76,7 @@ export function SettingsPopup({
             {/* Region Capture Shortcut Section */}
             <div className="space-y-3">
               <div className="text-sm font-medium text-foreground">
-                {locale === 'zh-CN' ? '区域截图快捷键' : 'Region Capture Shortcut'}
+                {t.regionCaptureShortcut}
               </div>
               <ShortcutSection
                 locale={locale}
@@ -84,7 +84,7 @@ export function SettingsPopup({
                 onShortcutChange={onRegionShortcutChange}
               />
               <p className="text-xs text-muted-foreground">
-                {locale === 'zh-CN' ? '修改快捷键后需要重启应用才能生效' : 'Restart required after changing shortcut'}
+                {t.restartRequired}
               </p>
             </div>
           </div>

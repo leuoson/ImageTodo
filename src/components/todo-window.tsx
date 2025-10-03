@@ -119,10 +119,10 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       })
 
       // Show success message
-      toast.success('快捷键已保存,重启应用后生效')
+      toast.success(t.shortcutSaved)
     } catch (error) {
       console.error('Failed to update region capture shortcut:', error)
-      toast.error('保存快捷键失败')
+      toast.error(t.settingsSaveError)
 
       // Revert local state on error
       try {

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { toast } from 'sonner'
+import { loadSettings } from '@/lib/settings'
+import { useTranslation, type Locale } from '@/lib/i18n'
 import './selection-overlay.css'
 
 interface SelectionRect {
@@ -14,7 +16,18 @@ interface SelectionRect {
 export function SelectionOverlay() {
   const [isSelecting, setIsSelecting] = useState(false)
   const [selection, setSelection] = useState<SelectionRect | null>(null)
+  const [locale, setLocale] = useState<Locale>('zh-CN')
   const overlayRef = useRef<HTMLDivElement>(null)
+  const t = useTranslation(locale)
+
+  // Load locale from settings
+  useEffect(() => {
+    loadSettings().then(settings => {
+      setLocale(settings.locale)
+    }).catch(error => {
+      console.error('Failed to load locale:', error)
+    })
+  }, [])
 
   // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -54,28 +67,28 @@ export function SelectionOverlay() {
     
     // Check minimum size
     if (width < 50 || height < 50) {
-      toast.error('选择区域过小,请重新选择')
+      toast.error(t.regionTooSmall)
       setSelection(null)
       return
     }
-    
+
     try {
       // Call Rust command to capture screenshot
       const result = await invoke<{success: boolean, path?: string, error?: string}>(
         'capture_screen_region',
         { x, y, width, height }
       )
-      
+
       if (result.success) {
-        toast.success('区域截图已保存')
+        toast.success(t.screenshotSaved)
         // Window will be closed by Rust side
       } else {
-        toast.error(result.error || '区域截图失败')
+        toast.error(result.error || t.screenshotFailed)
         setSelection(null)
       }
     } catch (error) {
       console.error('Screenshot failed:', error)
-      toast.error('区域截图失败')
+      toast.error(t.screenshotFailed)
       setSelection(null)
     }
   }
