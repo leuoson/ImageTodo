@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/system-screenshot/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T02:35:46.821Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759458946780_zqna6i9fh",
+      "approvalTitle": "系统截图功能 - 需求规范文档"
+    }
+  ]
+}

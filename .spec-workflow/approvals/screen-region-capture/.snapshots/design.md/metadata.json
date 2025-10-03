@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/screen-region-capture/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T03:25:27.071Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759461927027_sbuuqj5u7",
+      "approvalTitle": "Screen Region Capture - Design Document"
+    }
+  ]
+}

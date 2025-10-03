@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/system-screenshot/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T02:44:35.801Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759459475781_ge0xlcb0p",
+      "approvalTitle": "系统截图功能 - 任务分解文档"
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut'
 
-// Currently registered shortcut
-let currentShortcut: string | null = null
+// Currently registered shortcuts
+let currentShortcut: string | null = null // Full screenshot shortcut
+let currentRegionCaptureShortcut: string | null = null // Region capture shortcut
 
 /**
  * Convert shortcut format to Tauri-compatible format
@@ -166,7 +167,7 @@ function handleScreenshotTrigger(): void {
         console.log('Screenshot taken successfully')
         // Show success notification
         import('sonner').then(({ toast }) => {
-          toast.success('Screenshot saved successfully')
+          toast.success('截图已保存')
         }).catch(() => {
           // Fallback if toast fails
           console.log('Screenshot saved successfully')
@@ -176,7 +177,7 @@ function handleScreenshotTrigger(): void {
         console.error('Screenshot failed:', error)
         // Show error notification
         import('sonner').then(({ toast }) => {
-          toast.error('Screenshot failed')
+          toast.error('截图失败')
         }).catch(() => {
           // Fallback if toast fails
           console.error('Screenshot failed')

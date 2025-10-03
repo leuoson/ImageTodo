@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/system-screenshot/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T02:39:58.731Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759459198714_ztzm25fx4",
+      "approvalTitle": "系统截图功能 - 技术设计文档"
+    }
+  ]
+}

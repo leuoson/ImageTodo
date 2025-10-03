@@ -1,182 +1,77 @@
-import html2canvas from 'html2canvas'
+import { invoke } from '@tauri-apps/api/core'
 
 /**
  * Screenshot options
  */
 export interface ScreenshotOptions {
-  element?: HTMLElement
   filename?: string
-  quality?: number
-  format?: 'png' | 'jpeg'
-  width?: number
-  height?: number
 }
 
 /**
- * Screenshot result
+ * Screenshot result from Rust backend
+ */
+interface ScreenshotBackendResult {
+  success: boolean
+  path?: string
+  error?: string
+}
+
+/**
+ * Screenshot result for frontend
  */
 export interface ScreenshotResult {
-  dataUrl: string
-  blob: Blob
-  filename: string
+  success: boolean
+  path?: string
+  error?: string
 }
 
 /**
- * Take a screenshot of the current page or specific element
+ * Take a screenshot using native screen capture (xcap)
  */
-export async function takeScreenshot(options: ScreenshotOptions = {}): Promise<ScreenshotResult> {
-  const {
-    element = document.body,
-    filename = `screenshot-${Date.now()}.png`,
-    quality = 0.9,
-    format = 'png',
-    width,
-    height
-  } = options
-
+export async function takeScreenshot(
+  _options: ScreenshotOptions = {}
+): Promise<ScreenshotResult> {
   try {
-    // Configure html2canvas options
-    const canvas = await html2canvas(element, {
-      allowTaint: true,
-      useCORS: true,
-      scale: window.devicePixelRatio || 1,
-      width: width,
-      height: height,
-      backgroundColor: null, // Transparent background
-      removeContainer: true,
-      logging: false, // Disable console logs
-      imageTimeout: 15000, // 15 second timeout for images
-      onclone: (clonedDoc) => {
-        // Remove any elements that shouldn't be in screenshot
-        const elementsToRemove = clonedDoc.querySelectorAll('[data-screenshot-exclude]')
-        elementsToRemove.forEach(el => el.remove())
-      }
-    })
+    const result = await invoke<ScreenshotBackendResult>('capture_screenshot')
 
-    // Convert canvas to data URL
-    const dataUrl = canvas.toDataURL(`image/${format}`, quality)
-
-    // Convert to blob
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob)
-        } else {
-          reject(new Error('Failed to create blob from canvas'))
-        }
-      }, `image/${format}`, quality)
-    })
+    if (!result.success) {
+      throw new Error(result.error || 'Screenshot failed')
+    }
 
     return {
-      dataUrl,
-      blob,
-      filename
+      success: true,
+      path: result.path
     }
   } catch (error) {
     console.error('Screenshot failed:', error)
-    throw new Error('Failed to take screenshot')
-  }
-}
-
-/**
- * Download screenshot as file
- */
-export function downloadScreenshot(result: ScreenshotResult): void {
-  try {
-    const link = document.createElement('a')
-    link.download = result.filename
-    link.href = result.dataUrl
-    
-    // Trigger download
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  } catch (error) {
-    console.error('Download failed:', error)
-    throw new Error('Failed to download screenshot')
-  }
-}
-
-/**
- * Copy screenshot to clipboard
- */
-export async function copyScreenshotToClipboard(result: ScreenshotResult): Promise<void> {
-  try {
-    if (!navigator.clipboard || !navigator.clipboard.write) {
-      throw new Error('Clipboard API not supported')
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
-
-    const clipboardItem = new ClipboardItem({
-      [result.blob.type]: result.blob
-    })
-
-    await navigator.clipboard.write([clipboardItem])
-  } catch (error) {
-    console.error('Copy to clipboard failed:', error)
-    throw new Error('Failed to copy screenshot to clipboard')
   }
-}
-
-/**
- * Take screenshot of the entire application window
- */
-export async function takeAppScreenshot(): Promise<ScreenshotResult> {
-  // Find the main app container
-  const appElement = document.querySelector('[data-tauri-drag-region]')?.parentElement || document.body
-  
-  return takeScreenshot({
-    element: appElement as HTMLElement,
-    filename: `imagetodo-screenshot-${Date.now()}.png`
-  })
 }
 
 /**
  * Take screenshot and automatically download
  */
-export async function takeAndDownloadScreenshot(options: ScreenshotOptions = {}): Promise<void> {
-  try {
-    const result = await takeScreenshot(options)
-    downloadScreenshot(result)
-  } catch (error) {
-    console.error('Screenshot and download failed:', error)
-    throw error
-  }
-}
+export async function takeAndDownloadScreenshot(
+  options: ScreenshotOptions = {}
+): Promise<void> {
+  const result = await takeScreenshot(options)
 
-/**
- * Take screenshot and copy to clipboard
- */
-export async function takeAndCopyScreenshot(options: ScreenshotOptions = {}): Promise<void> {
-  try {
-    const result = await takeScreenshot(options)
-    await copyScreenshotToClipboard(result)
-  } catch (error) {
-    console.error('Screenshot and copy failed:', error)
-    throw error
+  if (!result.success) {
+    throw new Error(result.error || 'Screenshot failed')
   }
+
+  console.log('Screenshot saved to:', result.path)
 }
 
 /**
  * Check if screenshot functionality is available
  */
 export function isScreenshotSupported(): boolean {
-  try {
-    // Check if html2canvas is available
-    if (typeof html2canvas !== 'function') {
-      return false
-    }
-
-    // Check if canvas is supported
-    const canvas = document.createElement('canvas')
-    if (!canvas.getContext || !canvas.getContext('2d')) {
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error('Screenshot support check failed:', error)
-    return false
-  }
+  // xcap is always available in Tauri environment
+  return true
 }
 
 /**
@@ -184,9 +79,8 @@ export function isScreenshotSupported(): boolean {
  */
 export function getScreenshotCapabilities() {
   return {
-    supported: isScreenshotSupported(),
-    clipboardSupported: !!(navigator.clipboard && navigator.clipboard.write),
-    downloadSupported: true, // Always supported in browsers
-    formats: ['png', 'jpeg'] as const
+    supported: true,
+    formats: ['png'] as const,
+    nativeCapture: true
   }
 }

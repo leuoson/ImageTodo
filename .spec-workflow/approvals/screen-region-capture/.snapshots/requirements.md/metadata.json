@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/screen-region-capture/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T03:21:53.342Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759461713326_zbwyym7a0",
+      "approvalTitle": "Screen Region Capture - Requirements Document"
+    }
+  ]
+}

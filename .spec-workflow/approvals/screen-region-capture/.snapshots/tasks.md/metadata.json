@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/screen-region-capture/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T03:31:39.384Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759462299369_o8q33zfc3",
+      "approvalTitle": "Screen Region Capture - Tasks Document"
+    }
+  ]
+}
