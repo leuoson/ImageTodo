@@ -2,16 +2,18 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Plus, Grid3x3, Settings, ChevronLeft, ChevronRight, Minimize2, Trash2, MoreVertical, Pin } from "lucide-react"
+import { Plus, Grid3x3, Settings as SettingsIcon, ChevronLeft, ChevronRight, Minimize2, Trash2, MoreVertical, Pin, Image, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { SettingsPopup } from "@/components/settings-popup"
+import { ImageViewDialog } from "@/components/image-view-dialog"
 import { type Locale, useTranslation } from "@/lib/i18n"
-import { loadSettings, saveSettings } from "@/lib/settings"
+import { loadSettings, saveSettings, type Settings } from "@/lib/settings"
 import type { Todo } from "@/lib/types"
 import { load } from '@tauri-apps/plugin-store'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { invoke } from '@tauri-apps/api/core'
 
 interface TodoWindowProps {
   locale: Locale
@@ -24,7 +26,16 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   const [newTodoText, setNewTodoText] = useState("")
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [regionCaptureShortcut, setRegionCaptureShortcut] = useState("Alt+Shift+P")
+  const [settings, setSettings] = useState<Settings>({
+    locale,
+    regionCaptureShortcut: "Alt+Shift+P"
+  })
+
+  // 图像处理相关状态
+  const [isProcessingImage, setIsProcessingImage] = useState(false)
+  const [imageProcessingProgress, setImageProcessingProgress] = useState<string>('')
+  const [selectedImageTodo, setSelectedImageTodo] = useState<Todo | null>(null)
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
 
   // Load todos from Tauri store on mount
   useEffect(() => {
@@ -46,9 +57,9 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   useEffect(() => {
     const loadAppSettings = async () => {
       try {
-        const settings = await loadSettings()
-        setRegionCaptureShortcut(settings.regionCaptureShortcut)
-        console.log('Settings loaded:', settings)
+        const loadedSettings = await loadSettings()
+        setSettings(loadedSettings)
+        console.log('Settings loaded:', loadedSettings)
       } catch (error) {
         console.error('Failed to load settings:', error)
       }
@@ -107,30 +118,134 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     setIsSettingsOpen(true)
   }
 
-  const handleRegionShortcutChange = async (newShortcut: string) => {
+  const handleSettingsChange = async (updates: Partial<Settings>) => {
     try {
-      setRegionCaptureShortcut(newShortcut)
+      const newSettings = { ...settings, ...updates }
+      setSettings(newSettings)
+      await saveSettings(newSettings)
 
-      // Save to settings
-      const currentSettings = await loadSettings()
-      await saveSettings({
-        ...currentSettings,
-        regionCaptureShortcut: newShortcut
+      // If locale changed, update parent
+      if (updates.locale && updates.locale !== locale) {
+        onLocaleChange(updates.locale)
+      }
+
+      toast.success(t.settingsSaved || '设置已保存')
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      toast.error(t.settingsSaveError || '保存设置失败')
+
+      // Revert on error
+      try {
+        const revertedSettings = await loadSettings()
+        setSettings(revertedSettings)
+      } catch (loadError) {
+        console.error('Failed to revert settings:', loadError)
+      }
+    }
+  }
+
+  // 处理粘贴事件
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    // 检查是否有图像
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault()
+        await handleImagePaste()
+        return
+      }
+    }
+  }
+
+  // 处理图像粘贴
+  const handleImagePaste = async () => {
+    try {
+      setIsProcessingImage(true)
+      setImageProcessingProgress('正在读取剪贴板...')
+
+      // 1. 从剪贴板读取图像
+      const imageData = await invoke<{ bytes: number[], width: number, height: number }>('read_clipboard_image')
+
+      // 2. 生成待办事项ID
+      const todoId = Date.now().toString()
+
+      setImageProcessingProgress('正在保存图像...')
+
+      // 3. 保存图像
+      const imagePath = await invoke<string>('save_image', {
+        imageData: imageData.bytes,
+        width: imageData.width,
+        height: imageData.height,
+        todoId
       })
 
-      // Show success message
-      toast.success(t.shortcutSaved)
-    } catch (error) {
-      console.error('Failed to update region capture shortcut:', error)
-      toast.error(t.settingsSaveError)
+      setImageProcessingProgress('正在识别文字...')
 
-      // Revert local state on error
+      // 4. OCR处理图像
+      const ocrResult = await invoke<{ text: string, confidence: number, language: string }>('process_image_ocr', {
+        imagePath
+      })
+
+      setImageProcessingProgress('正在生成摘要...')
+
+      // 5. 尝试AI总结
+      let summary = ''
+      let method: 'ocr' | 'ai' = 'ocr'
+      let aiFailed = false
+
       try {
-        const settings = await loadSettings()
-        setRegionCaptureShortcut(settings.regionCaptureShortcut)
-      } catch (loadError) {
-        console.error('Failed to revert region shortcut:', loadError)
+        const aiSummary = await invoke<string>('summarize_text_multi_provider', {
+          text: ocrResult.text,
+          locale
+        })
+        summary = aiSummary
+        method = 'ai'
+      } catch (aiError) {
+        console.log('AI summarization failed:', aiError)
+        // AI失败,文本留空,显示警告
+        aiFailed = true
+        toast.error('AI处理失败,请配置AI提供商或查看图像中的OCR文本')
       }
+
+      // 6. 创建待办事项
+      const newTodo: Todo = {
+        id: todoId,
+        text: summary, // AI失败时为空字符串
+        completed: false,
+        createdAt: Date.now(),
+        hasImage: true,
+        imagePath,
+        imageProcessingMethod: method,
+        originalImageText: ocrResult.text,
+        aiFailed // 新增字段标记AI失败
+      }
+
+      const updatedTodos = [...todos, newTodo]
+      setTodos(updatedTodos)
+
+      // 保存到store
+      const store = await load('todos.json', { autoSave: true, defaults: {} })
+      await store.set('todos', updatedTodos)
+      await store.save()
+
+      toast.success('图像待办事项已创建')
+
+    } catch (error) {
+      console.error('Image processing failed:', error)
+      toast.error(`图像处理失败: ${error}`)
+    } finally {
+      setIsProcessingImage(false)
+      setImageProcessingProgress('')
+    }
+  }
+
+  // 处理待办事项点击
+  const handleTodoClick = (todo: Todo) => {
+    if (todo.hasImage) {
+      setSelectedImageTodo(todo)
+      setIsImageDialogOpen(true)
     }
   }
 
@@ -166,7 +281,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
               className="h-7 w-7"
               onClick={handleOpenSettings}
             >
-              <Settings className="h-4 w-4" />
+              <SettingsIcon className="h-4 w-4" />
             </Button>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleSidebar}>
@@ -178,28 +293,50 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
         <div className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-3">
             {todos.map((todo) => (
-              <div key={todo.id} className="flex items-center gap-3 group">
+              <div
+                key={todo.id}
+                className={`flex items-center gap-3 group ${todo.hasImage ? 'cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 py-1' : ''}`}
+                onClick={() => handleTodoClick(todo)}
+              >
                 <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} className="h-5 w-5" />
                 <span
                   className={`flex-1 text-sm ${
-                    todo.completed ? "line-through text-muted-foreground" : "text-card-foreground"
+                    todo.completed ? "line-through text-muted-foreground" :
+                    todo.aiFailed ? "text-muted-foreground italic" : "text-card-foreground"
                   }`}
                 >
-                  {todo.text}
+                  {todo.text || (todo.aiFailed ? '(AI处理失败,点击查看图像)' : '')}
                 </span>
+                {todo.hasImage && (
+                  <Image className="h-4 w-4 text-muted-foreground" />
+                )}
+                {todo.aiFailed && (
+                  <div title="AI处理失败">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                  </div>
+                )}
               </div>
             ))}
 
             {/* Add New Todo Input */}
             <div className="flex items-center gap-3 pt-2">
               <div className="w-5 h-5 rounded border-2 border-muted-foreground/30" />
-              <Input
-                value={newTodoText}
-                onChange={(e) => setNewTodoText(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder={t.addTodo}
-                className="flex-1 border-0 bg-transparent px-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/50"
-              />
+              <div className="flex-1">
+                <Input
+                  value={newTodoText}
+                  onChange={(e) => setNewTodoText(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  onPaste={handlePaste}
+                  placeholder={t.addTodo}
+                  className="border-0 bg-transparent px-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground/50"
+                  disabled={isProcessingImage}
+                />
+                {isProcessingImage && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {imageProcessingProgress}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -220,7 +357,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
             className="h-8 w-8"
             onClick={handleOpenSettings}
           >
-            <Settings className="h-4 w-4" />
+            <SettingsIcon className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-4 w-4" />
@@ -239,10 +376,16 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       <SettingsPopup
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
+        settings={settings}
+        onSettingsChange={handleSettingsChange}
+      />
+
+      {/* Image View Dialog */}
+      <ImageViewDialog
+        open={isImageDialogOpen}
+        onOpenChange={setIsImageDialogOpen}
+        todo={selectedImageTodo}
         locale={locale}
-        onLocaleChange={onLocaleChange}
-        regionCaptureShortcut={regionCaptureShortcut}
-        onRegionShortcutChange={handleRegionShortcutChange}
       />
     </div>
   )

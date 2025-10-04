@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ai-image-recognition/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T09:16:03.951Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759482963933_lx78c4v0w",
+      "approvalTitle": "AI Image Recognition Requirements Document"
+    }
+  ]
+}

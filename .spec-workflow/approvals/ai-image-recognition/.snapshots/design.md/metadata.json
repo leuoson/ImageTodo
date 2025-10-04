@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ai-image-recognition/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T09:28:14.488Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759483694470_ztkfmr9c2",
+      "approvalTitle": "AI图像识别设计文档"
+    }
+  ]
+}

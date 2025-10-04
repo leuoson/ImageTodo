@@ -3,27 +3,25 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LanguageSection } from "@/components/language-section"
 import { ShortcutSection } from "@/components/shortcut-section"
-import { type Locale, useTranslation } from "@/lib/i18n"
+import { AIProviderSettings } from "@/components/ai-provider-settings"
+import { useTranslation } from "@/lib/i18n"
+import { type Settings } from "@/lib/settings"
 import { cn } from "@/lib/utils"
 
 interface SettingsPopupProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  locale: Locale
-  onLocaleChange: (locale: Locale) => void
-  regionCaptureShortcut: string
-  onRegionShortcutChange: (shortcut: string) => void
+  settings: Settings
+  onSettingsChange: (updates: Partial<Settings>) => void
 }
 
 export function SettingsPopup({
   open,
   onOpenChange,
-  locale,
-  onLocaleChange,
-  regionCaptureShortcut,
-  onRegionShortcutChange
+  settings,
+  onSettingsChange
 }: SettingsPopupProps) {
-  const t = useTranslation(locale)
+  const t = useTranslation(settings.locale)
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -66,8 +64,8 @@ export function SettingsPopup({
           <div className="px-6 py-4 space-y-6">
             {/* Language Section */}
             <LanguageSection
-              locale={locale}
-              onLocaleChange={onLocaleChange}
+              locale={settings.locale}
+              onLocaleChange={(locale) => onSettingsChange({ locale })}
             />
 
             {/* Separator */}
@@ -79,14 +77,23 @@ export function SettingsPopup({
                 {t.regionCaptureShortcut}
               </div>
               <ShortcutSection
-                locale={locale}
-                shortcut={regionCaptureShortcut}
-                onShortcutChange={onRegionShortcutChange}
+                locale={settings.locale}
+                shortcut={settings.regionCaptureShortcut}
+                onShortcutChange={(shortcut) => onSettingsChange({ regionCaptureShortcut: shortcut })}
               />
               <p className="text-xs text-muted-foreground">
                 {t.restartRequired}
               </p>
             </div>
+
+            {/* Separator */}
+            <div className="border-t border-border/50" />
+
+            {/* AI Provider Settings */}
+            <AIProviderSettings
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+            />
           </div>
         </Dialog.Content>
       </Dialog.Portal>

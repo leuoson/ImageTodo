@@ -29,4 +29,10 @@ image = "0.25"
 chrono = "0.4"
 dirs = "5.0"
 arboard = "3.4"
+# OCR依赖
+leptess = "0.14"
+# AI图像识别依赖(可选)
+base64 = "0.21"
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
 

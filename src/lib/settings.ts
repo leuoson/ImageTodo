@@ -5,12 +5,43 @@ import { type Locale } from '@/lib/i18n'
 export interface AppSettings {
   locale: Locale
   regionCaptureShortcut: string
+
+  // AI提供商配置
+  // DeepSeek (推荐,性价比高)
+  deepseekApiKey?: string
+  deepseekModel?: string
+
+  // OpenAI
+  openaiApiKey?: string
+
+  // OpenRouter (支持Claude, Gemini等100+模型)
+  openrouterApiKey?: string
+  openrouterModel?: string
+
+  // Ollama本地模型
+  useOllama?: boolean
+  ollamaModel?: string
+
+  // 处理模式
+  imageProcessingMode?: 'ocr' | 'ai' | 'auto'
+
+  // 提供商优先级
+  providerPriority?: string[]
 }
+
+// Type alias for convenience
+export type Settings = AppSettings
 
 // Default settings
 export const defaultSettings: AppSettings = {
   locale: 'zh-CN',
-  regionCaptureShortcut: 'Alt+Shift+P'
+  regionCaptureShortcut: 'Alt+Shift+P',
+  imageProcessingMode: 'auto',
+  deepseekModel: 'deepseek-chat',
+  openrouterModel: 'anthropic/claude-3.5-sonnet',
+  ollamaModel: 'llava',
+  useOllama: false,
+  providerPriority: ['deepseek', 'openai', 'openrouter', 'ollama']
 }
 
 // Store file name

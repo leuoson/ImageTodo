@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ai-image-recognition/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T09:46:51.788Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759484811741_fjfypio9m",
+      "approvalTitle": "AI图像识别任务文档 - 阶段性测试版"
+    }
+  ]
+}

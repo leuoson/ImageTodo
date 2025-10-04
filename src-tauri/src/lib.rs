@@ -1,3 +1,7 @@
+mod ai_service;
+mod ocr_service;
+
+use ai_service::AIProvider;
 use xcap::Monitor;
 use chrono::Local;
 use std::path::PathBuf;
@@ -20,6 +24,26 @@ struct ScreenshotResult {
     success: bool,
     path: Option<String>,
     message: Option<String>,
+    error: Option<String>,
+}
+
+/// Image data structure for clipboard
+#[derive(Debug, Serialize, Deserialize)]
+struct ClipboardImageData {
+    width: usize,
+    height: usize,
+    bytes: Vec<u8>,
+}
+
+/// Image processing result
+#[derive(Debug, Serialize, Deserialize)]
+struct ImageProcessingResult {
+    success: bool,
+    summary: Option<String>,
+    raw_text: Option<String>,
+    method: String,
+    provider: Option<String>,
+    model: Option<String>,
     error: Option<String>,
 }
 
@@ -167,6 +191,150 @@ fn create_selector_window(app: &tauri::AppHandle) -> Result<(), String> {
     window.set_focus().map_err(|e| format!("Failed to set focus: {}", e))?;
 
     Ok(())
+}
+
+/// Read image from clipboard
+#[tauri::command]
+fn read_clipboard_image() -> Result<ClipboardImageData, String> {
+    let mut clipboard = Clipboard::new()
+        .map_err(|e| format!("无法访问剪贴板: {}", e))?;
+
+    let image = clipboard
+        .get_image()
+        .map_err(|e| format!("剪贴板中没有图像: {}", e))?;
+
+    Ok(ClipboardImageData {
+        width: image.width,
+        height: image.height,
+        bytes: image.bytes.to_vec(),
+    })
+}
+
+/// Save image to local storage
+#[tauri::command]
+fn save_image(
+    app: tauri::AppHandle,
+    image_data: Vec<u8>,
+    width: u32,
+    height: u32,
+    todo_id: String,
+) -> Result<String, String> {
+    use image::RgbaImage;
+    use std::fs;
+
+    // Get app data directory
+    let app_data_dir = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("无法获取应用数据目录: {}", e))?;
+
+    // Create images subdirectory
+    let images_dir = app_data_dir.join("images");
+    fs::create_dir_all(&images_dir)
+        .map_err(|e| format!("无法创建图像目录: {}", e))?;
+
+    // Generate filename
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
+    let filename = format!("{}_{}.png", todo_id, timestamp);
+    let file_path = images_dir.join(&filename);
+
+    // Convert bytes to image
+    let img = RgbaImage::from_raw(width, height, image_data)
+        .ok_or("无效的图像数据")?;
+
+    // Save image
+    img.save(&file_path)
+        .map_err(|e| format!("保存图像失败: {}", e))?;
+
+    eprintln!("图像已保存: {} ({}x{})", file_path.display(), width, height);
+
+    Ok(file_path.to_string_lossy().to_string())
+}
+
+/// 从设置加载AI提供商配置
+fn load_ai_providers(app: &tauri::AppHandle) -> Vec<AIProvider> {
+    use tauri_plugin_store::StoreExt;
+
+    let mut providers = Vec::new();
+
+    let store = match app.store("settings.json") {
+        Ok(s) => s,
+        Err(_) => return providers,
+    };
+
+    // Reload to get latest settings
+    if let Err(_) = store.reload() {
+        return providers;
+    }
+
+    let settings = match store.get("settings") {
+        Some(s) => s,
+        None => return providers,
+    };
+
+    // DeepSeek (优先级最高,性价比最好)
+    if let Some(deepseek_key) = settings.get("deepseekApiKey").and_then(|v| v.as_str()) {
+        if !deepseek_key.is_empty() {
+            let mut provider = AIProvider::deepseek(deepseek_key.to_string());
+            // 如果用户配置了模型,使用用户配置的
+            if let Some(model) = settings.get("deepseekModel").and_then(|v| v.as_str()) {
+                provider.model = model.to_string();
+            }
+            providers.push(provider);
+        }
+    }
+
+    // OpenAI
+    if let Some(openai_key) = settings.get("openaiApiKey").and_then(|v| v.as_str()) {
+        if !openai_key.is_empty() {
+            providers.push(AIProvider::openai(openai_key.to_string()));
+        }
+    }
+
+    // OpenRouter (支持Claude, Gemini等)
+    if let Some(openrouter_key) = settings.get("openrouterApiKey").and_then(|v| v.as_str()) {
+        if !openrouter_key.is_empty() {
+            let model = settings.get("openrouterModel")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            providers.push(AIProvider::openrouter(openrouter_key.to_string(), model));
+        }
+    }
+
+    // Ollama本地模型
+    if let Some(use_ollama) = settings.get("useOllama").and_then(|v| v.as_bool()) {
+        if use_ollama {
+            let model = settings.get("ollamaModel")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            providers.push(AIProvider::ollama(model));
+        }
+    }
+
+    providers
+}
+
+/// 获取可用的AI提供商列表
+#[tauri::command]
+fn get_available_ai_providers(app: tauri::AppHandle) -> Vec<AIProvider> {
+    load_ai_providers(&app)
+}
+
+/// AI文本总结(支持多提供商)
+#[tauri::command]
+async fn summarize_text_multi_provider(
+    app: tauri::AppHandle,
+    text: String,
+    locale: String,
+) -> Result<String, String> {
+    // 加载所有配置的AI提供商
+    let providers = load_ai_providers(&app);
+
+    if providers.is_empty() {
+        return Err("未配置AI提供商。请在设置中配置OpenAI、OpenRouter或Ollama。".to_string());
+    }
+
+    // 使用智能故障转移
+    ai_service::summarize_with_best_provider(&text, providers, &locale).await
 }
 
 /// Capture a region of the screen
@@ -354,7 +522,13 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
-            capture_screen_region
+            capture_screen_region,
+            read_clipboard_image,
+            save_image,
+            ocr_service::process_image_ocr,
+            ai_service::summarize_text_ai,
+            summarize_text_multi_provider,
+            get_available_ai_providers
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
