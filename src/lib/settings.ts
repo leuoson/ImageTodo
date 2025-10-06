@@ -1,5 +1,5 @@
 import { load } from '@tauri-apps/plugin-store'
-import { type Locale } from '@/lib/i18n'
+import { type Locale, translations } from '@/lib/i18n'
 
 // Settings data structure
 export interface AppSettings {
@@ -39,6 +39,18 @@ export interface AppSettings {
 // Type alias for convenience
 export type Settings = AppSettings
 
+// Get default AI system prompts from i18n translations
+function getDefaultAISystemPrompts() {
+  return {
+    'zh-CN': {
+      todoTaskPrompt: translations['zh-CN'].aiSystemPrompts.defaultTodoTaskPrompt.replace('{language}', '中文')
+    },
+    'en': {
+      todoTaskPrompt: translations.en.aiSystemPrompts.defaultTodoTaskPrompt.replace('{language}', 'English')
+    }
+  }
+}
+
 // Default settings
 export const defaultSettings: AppSettings = {
   locale: 'zh-CN',
@@ -49,14 +61,7 @@ export const defaultSettings: AppSettings = {
   ollamaModel: 'llava',
   useOllama: false,
   providerPriority: ['deepseek', 'openai', 'openrouter', 'ollama'],
-  aiSystemPrompts: {
-    'zh-CN': {
-      todoTaskPrompt: '你是一个任务助手。请分析图像内容并生成简洁、可执行的待办事项。请始终使用中文进行回复。'
-    },
-    'en': {
-      todoTaskPrompt: 'You are a task assistant. Please analyze the image content and generate concise, actionable todo items. Always respond in English.'
-    }
-  }
+  aiSystemPrompts: getDefaultAISystemPrompts()
 }
 
 // Store file name
@@ -86,9 +91,16 @@ export async function loadSettings(): Promise<AppSettings> {
     
     if (savedSettings) {
       // Merge with defaults to ensure all properties exist
+      // Special handling for aiSystemPrompts to ensure each locale has defaults
+      const mergedPrompts = {
+        ...getDefaultAISystemPrompts(),
+        ...savedSettings.aiSystemPrompts
+      }
+
       return {
         ...defaultSettings,
-        ...savedSettings
+        ...savedSettings,
+        aiSystemPrompts: mergedPrompts
       }
     }
     

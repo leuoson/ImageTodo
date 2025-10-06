@@ -46,6 +46,9 @@ export function AISystemPromptSettings({ settings, onSettingsChange }: AISystemP
     setIsResetting(true)
     try {
       const defaultPrompt = getDefaultPrompt()
+      console.log(`[AI提示词重置] 当前语言: ${settings.locale}`)
+      console.log(`[AI提示词重置] 从国际化配置读取的默认提示词: ${defaultPrompt}`)
+
       const updatedPrompts = {
         ...settings.aiSystemPrompts,
         [settings.locale]: {
