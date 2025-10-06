@@ -26,6 +26,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   const [newTodoText, setNewTodoText] = useState("")
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isPinned, setIsPinned] = useState(false) // 窗口固定状态
   const [settings, setSettings] = useState<Settings>({
     locale,
     regionCaptureShortcut: "Alt+Shift+P"
@@ -257,12 +258,56 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     }
   }
 
+  // 切换窗口固定状态
+  const togglePin = async () => {
+    try {
+      console.log('🔥 开始切换固定状态, 当前状态:', isPinned)
+      const currentWindow = getCurrentWindow()
+      console.log('🔥 获取到窗口对象:', currentWindow)
+
+      const newPinnedState = !isPinned
+      console.log('🔥 将要设置的状态:', newPinnedState)
+
+      if (newPinnedState) {
+        // 固定窗口：始终置底，禁用拖动，禁用最小化
+        console.log('🔥 设置置底...')
+        await currentWindow.setAlwaysOnBottom(true)
+        console.log('🔥 设置不可缩放...')
+        await currentWindow.setResizable(false)
+        // 隐藏最小化按钮的效果通过移除该按钮实现
+        toast.success('窗口已固定')
+      } else {
+        // 取消固定：取消置底，启用拖动，启用最小化
+        console.log('🔥 取消置底...')
+        await currentWindow.setAlwaysOnBottom(false)
+        console.log('🔥 设置可缩放...')
+        await currentWindow.setResizable(true)
+        toast.success('窗口已取消固定')
+      }
+
+      console.log('🔥 更新状态...')
+      setIsPinned(newPinnedState)
+      console.log('🔥 固定状态切换完成')
+    } catch (error) {
+      console.error('🔥 Failed to toggle pin - 详细错误:', error)
+      console.error('🔥 错误类型:', typeof error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorStack = error instanceof Error ? error.stack : 'No stack'
+      console.error('🔥 错误消息:', errorMessage)
+      console.error('🔥 错误堆栈:', errorStack)
+      toast.error(`切换固定状态失败: ${errorMessage}`)
+    }
+  }
+
   return (
     <div className="h-screen w-screen bg-card flex overflow-hidden rounded-xl">
       {/* Main Window */}
       <div className="flex-1 flex flex-col overflow-hidden rounded-xl">
         {/* Window Controls */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0 rounded-t-xl bg-card" data-tauri-drag-region>
+        <div
+          className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0 rounded-t-xl bg-card"
+          {...(!isPinned && { 'data-tauri-drag-region': true })}
+        >
           <div className="flex items-center gap-2">
             <button
               className="w-3 h-3 rounded-full bg-destructive hover:bg-destructive/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
@@ -282,6 +327,15 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
               onClick={handleOpenSettings}
             >
               <SettingsIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-7 w-7 ${isPinned ? 'text-primary bg-primary/10' : ''}`}
+              onClick={togglePin}
+              title={isPinned ? '取消固定窗口' : '固定窗口'}
+            >
+              <Pin className={`h-4 w-4 ${isPinned ? 'fill-current' : ''}`} />
             </Button>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleSidebar}>
@@ -348,9 +402,11 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
 
       {sidebarVisible && (
         <div className="w-12 bg-card border-l border-border/50 flex flex-col items-center py-4 gap-3 animate-in slide-in-from-right duration-200">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Minimize2 className="h-4 w-4" />
-          </Button>
+          {!isPinned && (
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -361,9 +417,6 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Pin className="h-4 w-4" />
           </Button>
           <div className="flex-1" />
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={deleteCompleted}>
