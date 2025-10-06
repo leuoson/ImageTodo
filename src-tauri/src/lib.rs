@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use serde::{Serialize, Deserialize};
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, Emitter};
 use arboard::{Clipboard, ImageData};
 use std::borrow::Cow;
 
@@ -458,6 +458,11 @@ fn capture_screen_region(
         }
     };
 
+    // Send notification
+    if let Err(e) = app.emit("screenshot-complete", &message) {
+        eprintln!("Failed to emit screenshot event: {}", e);
+    }
+
     // 7. Close window at the end
     window.close().ok();
 
@@ -474,6 +479,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
             use tauri_plugin_store::StoreExt;
