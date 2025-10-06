@@ -240,9 +240,14 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       let aiFailed = false
 
       try {
+        // 获取当前语言的AI提示词
+        const currentLocalePrompts = settings.aiSystemPrompts?.[locale] || {}
+        const customPrompt = currentLocalePrompts.todoTaskPrompt
+
         const aiSummary = await invoke<string>('summarize_text_multi_provider', {
           text: ocrResult.text,
-          locale
+          locale,
+          systemPrompt: customPrompt
         })
         summary = aiSummary
         method = 'ai'

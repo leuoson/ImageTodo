@@ -27,6 +27,13 @@ export interface AppSettings {
 
   // 提供商优先级
   providerPriority?: string[]
+
+  // AI系统提示词配置
+  aiSystemPrompts?: {
+    [locale: string]: {
+      todoTaskPrompt?: string
+    }
+  }
 }
 
 // Type alias for convenience
@@ -41,7 +48,15 @@ export const defaultSettings: AppSettings = {
   openrouterModel: 'anthropic/claude-3.5-sonnet',
   ollamaModel: 'llava',
   useOllama: false,
-  providerPriority: ['deepseek', 'openai', 'openrouter', 'ollama']
+  providerPriority: ['deepseek', 'openai', 'openrouter', 'ollama'],
+  aiSystemPrompts: {
+    'zh-CN': {
+      todoTaskPrompt: '你是一个任务助手。请分析图像内容并生成简洁、可执行的待办事项。请始终使用中文进行回复。'
+    },
+    'en': {
+      todoTaskPrompt: 'You are a task assistant. Please analyze the image content and generate concise, actionable todo items. Always respond in English.'
+    }
+  }
 }
 
 // Store file name

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { LanguageSection } from "@/components/language-section"
 import { ShortcutSection } from "@/components/shortcut-section"
 import { AIProviderSettings } from "@/components/ai-provider-settings"
+import { AISystemPromptSettings } from "@/components/ai-system-prompt-settings"
 import { useTranslation } from "@/lib/i18n"
 import { type Settings } from "@/lib/settings"
 import { cn } from "@/lib/utils"
@@ -91,6 +92,15 @@ export function SettingsPopup({
 
             {/* AI Provider Settings */}
             <AIProviderSettings
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+            />
+
+            {/* Separator */}
+            <div className="border-t border-border/50" />
+
+            {/* AI System Prompt Settings */}
+            <AISystemPromptSettings
               settings={settings}
               onSettingsChange={onSettingsChange}
             />

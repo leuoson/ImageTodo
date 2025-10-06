@@ -69,6 +69,16 @@ export const translations = {
     providerFailed: "Connection Failed",
     apiKeyPlaceholder: "Enter API key...",
     selectModel: "Select model...",
+    // AI System Prompts
+    aiSystemPrompts: {
+      title: "AI System Prompts",
+      description: "Configure custom prompts for AI processing",
+      resetPrompt: "Reset to default",
+      promptReset: "Prompt reset to default",
+      todoTaskPrompt: "Todo Task Generation Prompt",
+      todoTaskPromptPlaceholder: "Enter custom prompt for todo task generation...",
+      defaultTodoTaskPrompt: "# OCR Text Task Forced Summary Prompt (With Examples) ## Primary Prompt The text below originates from image recognition (OCR) and may contain out-of-order sequences, semantically incomplete content, chaotic descriptions, or irrelevant information. You are a task planning expert. Please **forcibly extract the most reasonable, executable, and complete to-do item (Todo)** from it. Leverage your abilities in semantic logic understanding, reasoning, and information completion to summarize the implied action intent within the text into **a single natural, concise, and clear Todo statement**. If the text includes queries, requests, reminders, notifications, or appeals for help, these must also be transformed into action-oriented Todos (e.g., \"Confirm\", \"Reply\", \"Assist\", \"Attend\", etc.). Even if the text information is insufficient or not entirely reasonable, you must **reasonably complete the semantics and output an actionable Todo**. The output **must contain only the Todo itself, and must not include any analysis, explanation, clarification, or other text**. --- ## Example Illustrations ### Example 1: Clear Task Type **Input:** > \"Send the meeting minutes to the HR department by 10 AM tomorrow.\" **Output:** > Send meeting minutes to HR department by 10 AM tomorrow. --- ### Example 2: Multiple Task Contents (Forcibly Merged into One Todo) **Input:** > \"Update the project progress, prepare materials for next week's meeting.\" **Output:** > Complete project progress update and prepare materials for next week's meeting. --- ### Example 3: Query or Request Type (Automatically Converted to Action) **Input:** > \"Does anyone know someone named Wan Huali? Which project did we collaborate on before?\" **Output:** > Confirm whether you know a person named Wan Huali and provide collaboration project details. --- ### Example 4: Reminder or Notification Type **Input:** > \"Please note the meeting tomorrow at 10 AM.\" **Output:** > Attend and confirm the meeting scheduled for tomorrow at 10 AM. --- ### Example 5: Emotional or Descriptive Text (Still Forced into a Todo) **Input:** > \"The office atmosphere is great today, and the sunshine is nice too.\" **Output:** > Maintain the positive work atmosphere and engage actively in today's work. --- ### Example 6: Chaotic or Incomplete Content (Reasonably Completed into a Todo) **Input:** > \"Meeting, document signature, HR, tomorrow.\" **Output:** > Sign the meeting documents and submit to HR department tomorrow. --- ### Example 7: No Obvious Task but Potentially Meaningful (Logically Completed) **Input:** > \"The customer feedback hasn't been replied to yet.\" **Output:** > Reply to the customer feedback immediately and record the outcome. --- ## Key Rules Summary - Regardless of how vague, disordered, or illogical the input text is, you must output a reasonable Todo. - If information is insufficient, infer reasonable actions based on context (e.g., \"Confirm\", \"Communicate\", \"Submit\", \"Complete\", etc.). - The output must be a single, natural, executable, and semantically complete sentence in English. - Strictly prohibit outputting explanatory content, descriptive phrases, or model analysis. - The output language should match the input language (Chinese→Chinese, English→English). --- **Core One-Line Version for System Calls:** > From the OCR-recognized text below, forcibly extract the most reasonable, executable, and complete Todo, expressed in one natural and concise English sentence; if the text contains queries, reminders, or descriptive content, convert it into an action task; even with insufficient information, reasonably complete it and output the Todo, output only the Todo itself without any explanation. Always respond in {language}.---",
+    },
   },
   "zh-CN": {
     addTodo: "添加新任务...",
@@ -138,6 +148,16 @@ export const translations = {
     providerFailed: "连接失败",
     apiKeyPlaceholder: "输入API密钥...",
     selectModel: "选择模型...",
+    // AI系统提示词
+    aiSystemPrompts: {
+      title: "AI系统提示词",
+      description: "配置AI处理的自定义提示词",
+      resetPrompt: "重置为默认",
+      promptReset: "提示词已重置为默认",
+      todoTaskPrompt: "待办任务生成提示词",
+      todoTaskPromptPlaceholder: "输入用于生成待办任务的自定义提示词...",
+      defaultTodoTaskPrompt: "# OCR 文本任务强制总结提示词 ## 主提示词 以下文本来自图片识别（OCR），其内容可能存在顺序错乱、语义不完整、描述混乱或包含无关信息。 你是一位任务规划大师，请从中​**​强行提炼出一个最合理、可执行、完整的待办事项（Todo）​**​。 请基于语义逻辑理解、推理与信息补全的能力，将文本中隐含的行动意图总结为​**​一句自然、简洁、明确的Todo语句​**​。 若文本中包含询问、请求、提醒、通知或求助内容，也必须转化为行动型Todo（例如“确认”“回复”“协助”“参加”等）。 即使文本信息不足或不完全合理，也要​**​合理补全语义，输出一个具备行动性的Todo​**​。 输出中​**​只能包含Todo本身，不得包含分析、解释、说明或其他文字​**​。 --- ## 示例说明 ### 示例 1：明确任务类 ​**​输入：​**​ > “明天上午十点前把会议纪要发给人事部。” ​**​输出：​**​ > 明天上午十点前发送会议纪要给人事部 --- ### 示例 2：多个任务内容（强制合并为一句Todo） ​**​输入：​**​ > “更新项目进度，准备下周会议资料。” ​**​输出：​**​ > 完成项目进度更新并准备下周会议资料 --- ### 示例 3：询问或求助类（自动转化为行动） ​**​输入：​**​ > “有认识叫万华礼的人吗？之前在哪个项目上合作过？” ​**​输出：​**​ > 确认是否认识名为万华礼的人并反馈其合作项目信息 --- ### 示例 4：提醒或通知类 ​**​输入：​**​ > “请大家注意明天上午十点的会议。” ​**​输出：​**​ > 参加并确认明天上午十点的会议安排 --- ### 示例 5：情绪或描述性文字（仍需强制形成Todo） ​**​输入：​**​ > “今天办公室气氛很好，阳光也不错。” ​**​输出：​**​ > 保持良好的工作氛围并积极投入今日工作 --- ### 示例 6：内容混乱或残缺（合理补全形成Todo） ​**​输入：​**​ > “会议、文件签名、人事、明天。” ​**​输出：​**​ > 明天完成会议文件签名并提交人事部门 --- ### 示例 7：无明显任务但有潜在意义（逻辑补全） ​**​输入：​**​ > “客户反馈还没回复。” ​**​输出：​**​ > 立即回复客户反馈并记录处理结果 --- ## 关键规则总结 * 无论输入文本多么模糊、无序或缺乏逻辑，都必须输出一个合理的Todo。 * 若信息不足，可根据上下文推测合理行为（如“确认”“沟通”“提交”“完成”等）。 * 输出必须为一句自然、可执行、语义完整的中文句子。 * 严禁输出解释性内容、说明性短语或模型分析。 * 输出语言与输入语言保持一致（中文→中文，英文→英文）。 --- ​**​一句核心版可嵌入系统调用：​**​ > 从以下OCR识别文本中，强行提炼出一个最合理、可执行、完整的Todo，用一句自然简洁的中文表达；若文本含有询问、提醒或描述内容，也要转化为行动任务；即使信息不足也应合理补全并输出Todo，只输出Todo本身，不包含任何解释。请始终使用{language}进行回复。",
+    },
   },
 }
 
