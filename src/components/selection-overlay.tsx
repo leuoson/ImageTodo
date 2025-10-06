@@ -30,7 +30,7 @@ export function SelectionOverlay() {
     })
   }, [])
 
-  // Get window scale factor on mount
+  // Get window scale factor on mount and ensure focus
   useEffect(() => {
     getCurrentWindow()
       .scaleFactor()
@@ -42,6 +42,28 @@ export function SelectionOverlay() {
         console.error('Failed to get scale factor:', err)
         // Keep default value 1.0
       })
+
+    // Ensure window is focused when component mounts
+    const ensureFocus = () => {
+      getCurrentWindow()
+        .setFocus()
+        .then(() => {
+          console.log('Window focus set successfully')
+        })
+        .catch(err => {
+          console.error('Failed to set window focus:', err)
+        })
+    }
+
+    // Initial focus attempt
+    ensureFocus()
+
+    // Also try to set focus after a short delay
+    const focusTimer = setTimeout(() => {
+      ensureFocus()
+    }, 100)
+
+    return () => clearTimeout(focusTimer)
   }, [])
 
   // Handle mouse down
@@ -141,43 +163,39 @@ export function SelectionOverlay() {
   // Handle Esc key to cancel
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
-      console.log('Key pressed:', e.key, 'Code:', e.code)
+      console.log('Key pressed:', e.key, 'Code:', e.code, 'Target:', e.target)
       if (e.key === 'Escape' || e.code === 'Escape') {
+        console.log('Escape key detected, preventing default and closing window...')
         e.preventDefault()
         e.stopPropagation()
         e.stopImmediatePropagation()
-        console.log('Closing window...')
+
+        // Immediately close window without async to prevent interference
         try {
           const window = getCurrentWindow()
-          await window.close()
-          console.log('Window closed successfully')
+          window.close().then(() => {
+            console.log('Window closed successfully')
+          }).catch(error => {
+            console.error('Failed to close window:', error)
+          })
         } catch (error) {
-          console.error('Failed to close window:', error)
+          console.error('Failed to get window:', error)
         }
         return false
       }
     }
 
-    const handleKeyUp = async (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.code === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-        return false
-      }
-    }
+    // Add event listeners with highest priority
+    window.addEventListener('keydown', handleKeyDown, { capture: true, passive: false })
+    document.addEventListener('keydown', handleKeyDown, { capture: true, passive: false })
 
-    // Add multiple event listeners to catch all escape events
-    window.addEventListener('keydown', handleKeyDown, true) // Capture phase
-    window.addEventListener('keyup', handleKeyUp, true) // Capture phase
-    document.addEventListener('keydown', handleKeyDown, true)
-    document.addEventListener('keyup', handleKeyUp, true)
+    // Also add on capture phase for body
+    document.body.addEventListener('keydown', handleKeyDown, { capture: true, passive: false })
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown, true)
-      window.removeEventListener('keyup', handleKeyUp, true)
-      document.removeEventListener('keydown', handleKeyDown, true)
-      document.removeEventListener('keyup', handleKeyUp, true)
+      window.removeEventListener('keydown', handleKeyDown, { capture: true, passive: false } as any)
+      document.removeEventListener('keydown', handleKeyDown, { capture: true, passive: false } as any)
+      document.body.removeEventListener('keydown', handleKeyDown, { capture: true, passive: false } as any)
     }
   }, [])
 

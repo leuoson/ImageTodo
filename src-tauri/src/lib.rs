@@ -187,8 +187,15 @@ fn create_selector_window(app: &tauri::AppHandle) -> Result<(), String> {
     .build()
     .map_err(|e| format!("Failed to create selector window: {}", e))?;
 
-    // Set focus to the window
-    window.set_focus().map_err(|e| format!("Failed to set focus: {}", e))?;
+    // Wait a bit for window to be fully created, then set focus and bring to front
+    std::thread::sleep(Duration::from_millis(50));
+    window.set_focus().map_err(|e| format!("Failed to set initial focus: {}", e))?;
+    window.set_always_on_top(true).map_err(|e| format!("Failed to set always on top: {}", e))?;
+
+    // Additional focus attempt after another short delay
+    std::thread::sleep(Duration::from_millis(100));
+    let _ = window.set_focus();
+    let _ = window.unminimize();
 
     Ok(())
 }
@@ -361,13 +368,17 @@ fn capture_screen_region(
         .get_webview_window("region-selector")
         .ok_or("Failed to get selector window")?;
 
-    // 2. Hide window before capturing
+    // 2. Minimize and hide window before capturing
+    window
+        .minimize()
+        .map_err(|e| format!("Failed to minimize window: {}", e))?;
+
     window
         .hide()
         .map_err(|e| format!("Failed to hide window: {}", e))?;
 
-    // 3. Wait for window to be fully hidden
-    thread::sleep(Duration::from_millis(100));
+    // 3. Wait longer for window to be fully hidden and system to update
+    thread::sleep(Duration::from_millis(200));
 
     // 4. Now capture the screen (overlay is no longer visible)
     // Get primary monitor
