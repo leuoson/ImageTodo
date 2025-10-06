@@ -474,6 +474,60 @@ fn capture_screen_region(
     })
 }
 
+/// Window creation result structure
+#[derive(Debug, Serialize, Deserialize)]
+struct WindowCreationResult {
+    success: bool,
+    window_label: Option<String>,
+    error: Option<String>,
+}
+
+/// Create a new todo window
+#[tauri::command]
+fn create_todo_window(app: tauri::AppHandle) -> Result<WindowCreationResult, String> {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    // Static counter for window offset positioning
+    static WINDOW_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+    // Generate unique window label using timestamp and counter
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("Failed to get timestamp: {}", e))?
+        .as_millis();
+
+    let counter = WINDOW_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let window_label = format!("todo-window-{}-{}", timestamp, counter);
+
+    // Calculate position offset (20px increments)
+    let offset = (counter % 10) * 20; // Cycle every 10 windows to avoid going off-screen
+
+    // Create new window with same configuration as main window
+    let _window = WebviewWindowBuilder::new(
+        &app,
+        &window_label,
+        WebviewUrl::App("index.html".into())
+    )
+    .title("Todo App")
+    .inner_size(350.0, 450.0)
+    .min_inner_size(350.0, 450.0)
+    .position(100.0 + offset as f64, 100.0 + offset as f64) // Offset position
+    .resizable(true)
+    .fullscreen(false)
+    .decorations(false)
+    .transparent(true)
+    .build()
+    .map_err(|e| format!("Failed to create window: {}", e))?;
+
+    println!("Created new todo window with label: {}", window_label);
+
+    Ok(WindowCreationResult {
+        success: true,
+        window_label: Some(window_label),
+        error: None,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -545,7 +599,8 @@ pub fn run() {
             ocr_service::process_image_ocr,
             ai_service::summarize_text_ai,
             summarize_text_multi_provider,
-            get_available_ai_providers
+            get_available_ai_providers,
+            create_todo_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

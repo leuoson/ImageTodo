@@ -2,7 +2,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Plus, Grid3x3, Settings as SettingsIcon, ChevronLeft, ChevronRight, Minimize2, Trash2, MoreVertical, Pin, Image, AlertCircle } from "lucide-react"
+import { Plus, Grid3x3, Settings as SettingsIcon, ChevronLeft, ChevronRight, Minimize2, Trash2, MoreVertical, Pin, Image, AlertCircle, SquarePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -14,6 +14,7 @@ import type { Todo } from "@/lib/types"
 import { load } from '@tauri-apps/plugin-store'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { invoke } from '@tauri-apps/api/core'
+import { useWindow } from '@/contexts/WindowContext'
 
 interface TodoWindowProps {
   locale: Locale
@@ -22,6 +23,7 @@ interface TodoWindowProps {
 
 export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
   const t = useTranslation(locale)
+  const { windowId, isLoading: isWindowLoading } = useWindow()
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodoText, setNewTodoText] = useState("")
   const [sidebarVisible, setSidebarVisible] = useState(false)
@@ -40,10 +42,33 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
 
   // Load todos from Tauri store on mount
   useEffect(() => {
+    if (isWindowLoading) return // Wait for window ID to be detected
+
     const loadTodos = async () => {
       try {
-        const store = await load('todos.json', { autoSave: true, defaults: {} })
-        const savedTodos = await store.get<Todo[]>('todos')
+        // Use window-specific store file
+        const storeFileName = `todos-window-${windowId}.json`
+        const store = await load(storeFileName, { autoSave: true, defaults: {} })
+        let savedTodos = await store.get<Todo[]>('todos')
+
+        // Migration: If this is the main window and no data exists, try to load from old todos.json
+        if (!savedTodos && windowId === 'main') {
+          try {
+            const oldStore = await load('todos.json', { autoSave: false, defaults: {} })
+            const oldTodos = await oldStore.get<Todo[]>('todos')
+            if (oldTodos && oldTodos.length > 0) {
+              console.log('Migrating todos from todos.json to todos-window-main.json')
+              // Save to new location
+              await store.set('todos', oldTodos)
+              await store.save()
+              savedTodos = oldTodos
+              toast.success('已迁移待办事项数据')
+            }
+          } catch (migrationError) {
+            console.log('No old todos.json to migrate:', migrationError)
+          }
+        }
+
         if (savedTodos) {
           setTodos(savedTodos)
         }
@@ -52,7 +77,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       }
     }
     loadTodos()
-  }, [])
+  }, [windowId, isWindowLoading])
 
   // Load settings and initialize shortcuts on mount
   useEffect(() => {
@@ -70,9 +95,13 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
 
   // Save todos to Tauri store whenever they change
   useEffect(() => {
+    if (isWindowLoading) return // Wait for window ID to be detected
+
     const saveTodos = async () => {
       try {
-        const store = await load('todos.json', { autoSave: true, defaults: {} })
+        // Use window-specific store file
+        const storeFileName = `todos-window-${windowId}.json`
+        const store = await load(storeFileName, { autoSave: true, defaults: {} })
         await store.set('todos', todos)
         await store.save()
       } catch (error) {
@@ -82,7 +111,7 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
     if (todos.length > 0 || todos.length === 0) {
       saveTodos()
     }
-  }, [todos])
+  }, [todos, windowId, isWindowLoading])
 
   const addTodo = () => {
     if (newTodoText.trim()) {
@@ -117,6 +146,20 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
 
   const handleOpenSettings = () => {
     setIsSettingsOpen(true)
+  }
+
+  const handleCreateNewWindow = async () => {
+    try {
+      const result = await invoke<{ success: boolean; window_label?: string; error?: string }>('create_todo_window')
+      if (result.success) {
+        toast.success('新窗口已创建')
+      } else {
+        toast.error(`创建窗口失败: ${result.error || '未知错误'}`)
+      }
+    } catch (error) {
+      console.error('Failed to create new window:', error)
+      toast.error(`创建窗口失败: ${error}`)
+    }
   }
 
   const handleSettingsChange = async (updates: Partial<Settings>) => {
@@ -226,8 +269,9 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
       const updatedTodos = [...todos, newTodo]
       setTodos(updatedTodos)
 
-      // 保存到store
-      const store = await load('todos.json', { autoSave: true, defaults: {} })
+      // 保存到store (使用窗口特定的store文件)
+      const storeFileName = `todos-window-${windowId}.json`
+      const store = await load(storeFileName, { autoSave: true, defaults: {} })
       await store.set('todos', updatedTodos)
       await store.save()
 
@@ -316,6 +360,15 @@ export function TodoWindow({ locale, onLocaleChange }: TodoWindowProps) {
             />
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={addTodo}>
               <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleCreateNewWindow}
+              title="新建窗口"
+            >
+              <SquarePlus className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <Grid3x3 className="h-4 w-4" />

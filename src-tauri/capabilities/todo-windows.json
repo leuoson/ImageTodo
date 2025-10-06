@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "todo-windows",
+  "description": "Capability for dynamically created todo windows",
+  "windows": ["todo-window-*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-always-on-bottom",
+    "core:window:allow-set-resizable",
+    "opener:default",
+    "store:default"
+  ]
+}
+
